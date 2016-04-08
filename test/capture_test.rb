@@ -15,8 +15,6 @@ class BassistCell < Cell::ViewModel
 
   self.view_paths = ['test/views']
 
-  attr_accessor :data_from_block
-
   def content_for_test
     render
   end
@@ -28,10 +26,5 @@ class CaptureTest < ActionController::TestCase
   test "#content_for" do
     get 'show'
     assert_includes @response.body, "keep me!<pre>DummDooDiiDoo</pre>"
-  end
-
-  test "#cell passes arguments to the cell" do
-    get 'show'
-    assert_includes @response.body, "I am data from block"
   end
 end
