@@ -5,13 +5,13 @@ module Cell
     module Capture
       extend ActiveSupport::Concern
       included do
-        helper ContentForExtension
+        include ContentForExtension
       end
 
       attr_accessor :global_tpl
 
       module RenderCellExtension
-        def render_cell(*args, &block)
+        def cell(*args, &block)
           super(*args) do |cell|
             block.call(cell) if block_given?
             cell.global_tpl = self if cell.is_a? ::Cell::Rails::Capture
@@ -20,22 +20,22 @@ module Cell
       end
 
       module ContentForExtension
-        def content_for(name, content=nil, &block)
+        def content_for(name, content=nil, options={}, &block)
           # this resembles rails' own #content_for INTENTIONALLY. Due to some internal rails-thing we have to call #capture on the cell's view, otherwise,
           # rails wouldn't suppress the captured output. uncomment next line to provoke.
           #cnt = @tpl.capture(&block)
-
           if content || block_given?
-            content = capture(&block) if block_given?
-            @global_tpl.view_flow.append(name, content) if content
+            if block_given?
+              options = content if content
+              content = capture(&block)
+            end
+            if content
+              options[:flush] ? @view_flow.set(name, content) : @view_flow.append(name, content)
+            end
             nil
           else
-            @view_flow.get(name)
+            @view_flow.get(name).presence
           end
-        # i would love to simply do this:
-        # TODO: refactor rails helper.
-        #@tpl.content_for(*args, &block)
-        #nil
         end
       end
 
@@ -43,7 +43,7 @@ module Cell
   end
 end
 
-# TODO: can we avoid monkey-patching #render_cell?
+# TODO: can we avoid monkey-patching #cell?
 ActionView::Base.class_eval do
   include Cell::Rails::Capture::RenderCellExtension
 end
